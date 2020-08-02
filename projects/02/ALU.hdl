@@ -23,6 +23,7 @@
 // if (f == 1)  set out = x + y  // integer 2's complement addition
 // if (f == 0)  set out = x & y  // bitwise and
 // if (no == 1) set out = !out   // bitwise not
+
 // if (out == 0) set zr = 1
 // if (out < 0) set ng = 1
 
@@ -42,5 +43,35 @@ CHIP ALU {
         ng; // 1 if (out < 0),  0 otherwise
 
     PARTS:
-   // Put you code here:
+    Mux16(a=x, b=false, sel=zx, out=zxOut);
+    Not16(in=zxOut, out=notZxOut);
+    Mux16(a=zxOut, b=notZxOut, sel=nx, out=nxOut);
+
+    Mux16(a=y, b=false, sel=zy, out=zyOut);
+    Not16(in=zyOut, out=notZyOut);
+    Mux16(a=zyOut, b=notZyOut, sel=ny, out=nyOut);
+
+    Add16(a=nxOut, b=nyOut, out=add16NxOutNyOut);
+    And16(a=nxOut, b=nyOut, out=andNxOutNyOut);
+    Mux16(a=andNxOutNyOut, b=add16NxOutNyOut, sel=f, out=muxFOut);
+
+    Not16(in=muxFOut, out=notMuxFOut);
+    Mux16(
+        a=muxFOut,
+        b=notMuxFOut,
+        sel=no,
+        out=out,
+        out[15]=out15,
+        out[0..7]=outToCheckValue0,
+        out[8..15]=outToCheckValue1
+    );
+
+    Or8Way(in=outToCheckValue0, out=orOut0);
+    Or8Way(in=outToCheckValue1, out=orOut1);
+    Or(a=orOut0, b=orOut1, out=orOut);
+
+    Mux(a=true, b=false, sel=orOut, out=zr);
+
+    Mux(a=false, b=true, sel=out15, out=ng);
+
 }
